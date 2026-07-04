@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'backend-vote'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend-vote:5000']
+
+  - job_name: 'backend-results'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend-results:5001']
+
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']

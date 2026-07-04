@@ -1,0 +1,249 @@
+version: '3.8'
+
+services:
+  # 1. Reverse Proxy (Gateway)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: voting_nginx_prod
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    depends_on:
+      - frontend
+      - backend-vote
+      - backend-results
+    networks:
+      - app-network
+    restart: always
+
+  # 2. React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voting_frontend_prod
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+    networks:
+      - app-network
+    restart: always
+
+  # 3. Node.js Voting API
+  backend-vote:
+    build:
+      context: ./backend-vote
+      dockerfile: Dockerfile
+    container_name: voting_backend_vote_prod
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=5000
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5000/health', (r) => { if(r.statusCode === 200) process.exit(0); else process.exit(1); }).on('error', () => process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: always
+
+  # 4. Python/Flask Results API
+  backend-results:
+    build:
+      context: ./backend-results
+      dockerfile: Dockerfile
+    container_name: voting_backend_results_prod
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass_prod
+      - PORT=5001
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=3)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  # 5. Python Queue Worker
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: voting_worker_prod
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass_prod
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  # 6. Redis Database Broker
+  redis:
+    image: redis:7-alpine
+    container_name: voting_redis_prod
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data-prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    networks:
+      - app-network
+    restart: always
+
+  # 7. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: voting_db_prod
+    environment:
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass_prod
+    volumes:
+      - db-data-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d voting_db"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - app-network
+    restart: always
+
+  # 8. Redis Exporter for Metrics Scrapes
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.52.0
+    container_name: voting_redis_exporter_prod
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: always
+
+  # 9. PostgreSQL Exporter for Metrics Scrapes
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.12.1
+    container_name: voting_postgres_exporter_prod
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:voting_secure_pass_prod@db:5432/voting_db?sslmode=disable
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  # 10. Prometheus Scraper
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: voting_prometheus_prod
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    networks:
+      - app-network
+    restart: always
+
+  # 11. Grafana Dashboard
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: voting_grafana_prod
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards/voting-dashboard.json:/var/lib/grafana/dashboards/voting-dashboard.json:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data-prod:
+  redis-data-prod:

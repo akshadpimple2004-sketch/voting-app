@@ -1,0 +1,192 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "title": "Vote Submissions by Option (Cumulative)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(voting_app_votes_total) by (option)",
+          "legendFormat": "Option {{option}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "title": "Total Votes Count (Node.js Counter)",
+      "type": "gauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(voting_app_votes_total)",
+          "legendFormat": "Total Votes",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1000,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "title": "HTTP Request Rates (per minute)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(voting_app_http_requests_total[1m])) * 60",
+          "legendFormat": "Voting API Requests",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(results_api_requests_total[1m])) * 60",
+          "legendFormat": "Results API Requests",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line"
+          },
+          "unit": "req/min"
+        }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "title": "Results API Request Latency (Average)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "Prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(results_api_request_duration_seconds_sum[1m]) / rate(results_api_request_duration_seconds_count[1m])",
+          "legendFormat": "Latency /api/results",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line"
+          },
+          "unit": "s"
+        }
+      }
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["voting-app", "production", "devops"],
+  "title": "Voting App Infrastructure Dashboard",
+  "timezone": "browser",
+  "weekStart": ""
+}

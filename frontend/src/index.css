@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: #f8fafc;
+  background-color: #030712;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --bg-gradient: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #030712 100%);
+  --panel-bg: rgba(17, 24, 39, 0.7);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --primary-glow: rgba(99, 102, 241, 0.15);
+  
+  --color-a: #ec4899; /* Deep Space (Pink/Rose) */
+  --color-a-glow: rgba(236, 72, 153, 0.2);
+  --color-b: #06b6d4; /* Deep Ocean (Cyan) */
+  --color-b-glow: rgba(6, 182, 212, 0.2);
+  
+  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism containers */
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: var(--transition-smooth);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Custom glowing effects */
+.glow-option-a:hover {
+  box-shadow: 0 0 40px var(--color-a-glow);
+  border-color: var(--color-a);
+}
+
+.glow-option-b:hover {
+  box-shadow: 0 0 40px var(--color-b-glow);
+  border-color: var(--color-b);
+}
+
+/* Keyframes for animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+.pulse-active {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #030712;
+}
+::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}

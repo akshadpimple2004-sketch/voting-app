@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # 1. Reverse Proxy (Gateway)
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: voting_nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend-vote
+      - backend-results
+    networks:
+      - app-network
+    restart: always
+
+  # 2. React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voting_frontend
+    networks:
+      - app-network
+    restart: always
+
+  # 3. Node.js Voting API
+  backend-vote:
+    build:
+      context: ./backend-vote
+      dockerfile: Dockerfile
+    container_name: voting_backend_vote
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=5000
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: always
+
+  # 4. Python/Flask Results API
+  backend-results:
+    build:
+      context: ./backend-results
+      dockerfile: Dockerfile
+    container_name: voting_backend_results
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass
+      - PORT=5001
+    depends_on:
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  # 5. Python Queue Worker
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: voting_worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app-network
+    restart: always
+
+  # 6. Redis Queue / Cache Broker
+  redis:
+    image: redis:7-alpine
+    container_name: voting_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: always
+
+  # 7. PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: voting_db
+    environment:
+      - POSTGRES_DB=voting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=voting_secure_pass
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: always
+
+  # 8. Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: voting_prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+    restart: always
+
+  # 9. Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:10.0.0
+    container_name: voting_grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards/voting-dashboard.json:/var/lib/grafana/dashboards/voting-dashboard.json:ro
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:
