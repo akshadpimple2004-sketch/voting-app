@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Rocket, Anchor, Vote, BarChart3, Shield, RefreshCw, Moon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Rocket, Anchor, Vote, BarChart3, Shield, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import './App.css';
 
 interface VoteResults {
