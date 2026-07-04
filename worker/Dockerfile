@@ -15,7 +15,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-privileged user and group to run the app
-RUN groupadd -r worker && useradd -no-log-init -r -g worker worker
+RUN groupadd -r worker && useradd --no-log-init -r -g worker worker
 
 COPY worker.py .
 

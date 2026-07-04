@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-privileged user
-RUN groupadd -r flask && useradd -no-log-init -r -g flask flask
+RUN groupadd -r flask && useradd --no-log-init -r -g flask flask
 
 COPY app.py .
 
